@@ -31,8 +31,10 @@ import {
   Trash2,
   X,
   ZoomIn,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
 
 
 const includedItems = [
@@ -221,7 +223,16 @@ export default function LeadFormSection() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [altPhoneError, setAltPhoneError] = useState<string | null>(null);
   const [previewModal, setPreviewModal] = useState<{ url: string; name: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -363,55 +374,81 @@ export default function LeadFormSection() {
   };
 
   const handleSubmit = async () => {
-    const leadPayload = {
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      altPhone: formData.altPhone,
-      businessName: formData.businessName,
-      category: formData.category === "Other / Custom" ? (formData.customCategory || "Other") : formData.category,
-      servicesDescription: formData.servicesDescription,
-      instagram: formData.instagram,
-      facebook: formData.facebook,
-      linkedin: formData.linkedin,
-      selectedFeatures: formData.selectedFeatures,
-      notes: formData.notes,
-    };
-
-    // 1. Post directly to NestJS Backend API (port 4000)
+    setIsSubmitting(true);
     try {
-      await fetch('http://localhost:4000/api/clients/submit-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadPayload),
-      });
-    } catch (err) {
-      console.warn('Backend API submit lead warning:', err);
-    }
+      // 1. Convert logo and banner files to uploadable base64 data URLs
+      const logoAssets = await Promise.all(
+        formData.logoFiles.map(async (file) => ({
+          url: await readFileAsDataUrl(file),
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || 'image/png',
+        }))
+      );
 
-    // 2. Backup to LocalStorage
-    try {
-      const submissionRecord = {
-        id: Date.now(),
-        submittedAt: new Date().toLocaleString(),
-        ...leadPayload,
-        logoFilesCount: formData.logoFiles.length,
-        bannerFilesCount: formData.bannerFiles.length,
+      const bannerAssets = await Promise.all(
+        formData.bannerFiles.map(async (file) => ({
+          url: await readFileAsDataUrl(file),
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || 'image/jpeg',
+        }))
+      );
+
+      const leadPayload = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        altPhone: formData.altPhone,
+        businessName: formData.businessName,
+        category: formData.category === "Other / Custom" ? (formData.customCategory || "Other") : formData.category,
+        servicesDescription: formData.servicesDescription,
+        instagram: formData.instagram,
+        facebook: formData.facebook,
+        linkedin: formData.linkedin,
+        selectedFeatures: formData.selectedFeatures,
+        notes: formData.notes,
+        logoAssets,
+        bannerAssets,
       };
 
-      const existingSubmissions = JSON.parse(localStorage.getItem("emperor_website_submissions") || "[]");
-      existingSubmissions.unshift(submissionRecord);
-      localStorage.setItem("emperor_website_submissions", JSON.stringify(existingSubmissions));
-      localStorage.removeItem("emperor_form_draft");
-    } catch (e) {
-      console.error("Could not save submission to localStorage", e);
-    }
+      // 2. Post directly to NestJS Backend API (port 4000)
+      try {
+        await fetch('http://localhost:4000/api/clients/submit-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadPayload),
+        });
+      } catch (err) {
+        console.warn('Backend API submit lead warning:', err);
+      }
 
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setStep(1);
-    }, 6000);
+      // 3. Backup to LocalStorage
+      try {
+        const submissionRecord = {
+          id: Date.now(),
+          submittedAt: new Date().toLocaleString(),
+          ...leadPayload,
+          logoFilesCount: formData.logoFiles.length,
+          bannerFilesCount: formData.bannerFiles.length,
+        };
+
+        const existingSubmissions = JSON.parse(localStorage.getItem("emperor_website_submissions") || "[]");
+        existingSubmissions.unshift(submissionRecord);
+        localStorage.setItem("emperor_website_submissions", JSON.stringify(existingSubmissions));
+        localStorage.removeItem("emperor_form_draft");
+      } catch (e) {
+        console.error("Could not save submission to localStorage", e);
+      }
+
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setStep(1);
+      }, 6000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -907,18 +944,29 @@ export default function LeadFormSection() {
                       <div className="flex items-center gap-3 pt-2">
                         <button
                           type="button"
+                          disabled={isSubmitting}
                           onClick={handleBack}
-                          className="w-1/3 bg-[#EFECE5] hover:bg-[#E5DFD3] text-[#1C1E1B] font-bold text-xs py-3.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                          className="w-1/3 bg-[#EFECE5] hover:bg-[#E5DFD3] disabled:opacity-50 text-[#1C1E1B] font-bold text-xs py-3.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
                         >
                           <ArrowLeft className="w-4 h-4" />
                           <span>BACK</span>
                         </button>
                         <button
                           type="submit"
-                          className="w-2/3 bg-[#072B1E] hover:bg-[#0C3828] text-white font-bold text-xs sm:text-sm tracking-wider py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                          disabled={isSubmitting}
+                          className="w-2/3 bg-[#072B1E] hover:bg-[#0C3828] disabled:opacity-75 text-white font-bold text-xs sm:text-sm tracking-wider py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
                         >
-                          <span>GET MY FREE WEBSITE</span>
-                          <ArrowRight className="w-4 h-4" />
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-[#C09A5B]" />
+                              <span>UPLOADING ASSETS...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>GET MY FREE WEBSITE</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
                         </button>
                       </div>
                     </motion.div>

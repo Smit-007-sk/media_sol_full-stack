@@ -1,6 +1,26 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEmail, IsOptional, IsArray } from 'class-validator';
 
+export class UploadedAssetDto {
+  @ApiProperty({ description: 'File data URL or image URL' })
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+
+  @ApiProperty({ description: 'Original file name' })
+  @IsString()
+  @IsNotEmpty()
+  fileName: string;
+
+  @ApiPropertyOptional({ description: 'File size in bytes' })
+  @IsOptional()
+  fileSize?: number;
+
+  @ApiPropertyOptional({ description: 'MIME type' })
+  @IsOptional()
+  mimeType?: string;
+}
+
 export class SubmitLeadDto {
   @ApiProperty({ description: 'Full Name of the client', example: 'Smit Khatri' })
   @IsString()
@@ -61,4 +81,15 @@ export class SubmitLeadDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Uploaded logo files' })
+  @IsArray()
+  @IsOptional()
+  logoAssets?: UploadedAssetDto[];
+
+  @ApiPropertyOptional({ description: 'Uploaded banner and media files' })
+  @IsArray()
+  @IsOptional()
+  bannerAssets?: UploadedAssetDto[];
 }
+

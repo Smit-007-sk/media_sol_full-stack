@@ -55,6 +55,11 @@ export class ClientsService {
               fileName: true,
             },
           },
+          websites: {
+            include: {
+              media: true,
+            },
+          },
         },
       }),
     ]);
@@ -84,12 +89,11 @@ export class ClientsService {
           },
         },
         websites: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
-            isPublished: true,
+          include: {
+            media: true,
+            hero: true,
+            about: true,
+            services: true,
           },
         },
       },
@@ -249,6 +253,8 @@ export class ClientsService {
       },
     });
 
+    let createdWebsite: any = null;
+
     try {
       const firstTemplate = await this.prisma.template.findFirst();
 
@@ -260,7 +266,7 @@ export class ClientsService {
           siteCounter++;
         }
 
-        await this.prisma.website.create({
+        createdWebsite = await this.prisma.website.create({
           data: {
             name: `${dto.businessName} Website`,
             slug: siteSlug,
@@ -275,7 +281,97 @@ export class ClientsService {
       console.warn('Auto website creation for lead skipped:', err);
     }
 
-    return client;
+    let primaryLogoMediaId: string | null = null;
+    let primaryBannerMediaId: string | null = null;
+
+    // Process uploaded logo assets
+    if (dto.logoAssets && dto.logoAssets.length > 0) {
+      for (const logo of dto.logoAssets) {
+        if (logo.url && logo.fileName) {
+          try {
+            const createdMedia = await this.prisma.media.create({
+              data: {
+                type: 'IMAGE',
+                url: logo.url,
+                fileName: logo.fileName,
+                storageKey: `client-logos/${Date.now()}-${logo.fileName}`,
+                mimeType: logo.mimeType || 'image/png',
+                fileSize: logo.fileSize || 102400,
+                altText: `${dto.businessName} Logo`,
+                websiteId: createdWebsite?.id || null,
+              },
+            });
+            if (!primaryLogoMediaId) {
+              primaryLogoMediaId = createdMedia.id;
+            }
+          } catch (e) {
+            console.error('Error saving logo media:', e);
+          }
+        }
+      }
+    }
+
+    // Process uploaded banner assets
+    if (dto.bannerAssets && dto.bannerAssets.length > 0) {
+      for (const banner of dto.bannerAssets) {
+        if (banner.url && banner.fileName) {
+          try {
+            const createdMedia = await this.prisma.media.create({
+              data: {
+                type: 'IMAGE',
+                url: banner.url,
+                fileName: banner.fileName,
+                storageKey: `client-banners/${Date.now()}-${banner.fileName}`,
+                mimeType: banner.mimeType || 'image/jpeg',
+                fileSize: banner.fileSize || 204800,
+                altText: `${dto.businessName} Banner Photo`,
+                websiteId: createdWebsite?.id || null,
+              },
+            });
+            if (!primaryBannerMediaId) {
+              primaryBannerMediaId = createdMedia.id;
+            }
+          } catch (e) {
+            console.error('Error saving banner media:', e);
+          }
+        }
+      }
+    }
+
+    // Link primary logo to client
+    if (primaryLogoMediaId) {
+      await this.prisma.client.update({
+        where: { id: client.id },
+        data: { logoMediaId: primaryLogoMediaId },
+      });
+    }
+
+    // Initialize Hero section on website with banner image
+    if (createdWebsite) {
+      try {
+        await this.prisma.hero.upsert({
+          where: { websiteId: createdWebsite.id },
+          update: {
+            title: dto.businessName,
+            description: dto.servicesDescription || `Welcome to ${dto.businessName}`,
+            ...(primaryBannerMediaId && { imageId: primaryBannerMediaId }),
+          },
+          create: {
+            websiteId: createdWebsite.id,
+            eyebrow: dto.category || 'Official Website',
+            title: dto.businessName,
+            description: dto.servicesDescription || `Welcome to ${dto.businessName}`,
+            primaryButtonText: 'Contact Us',
+            primaryButtonUrl: '#contact',
+            imageId: primaryBannerMediaId || null,
+          },
+        });
+      } catch (e) {
+        console.warn('Hero section setup skipped:', e);
+      }
+    }
+
+    return this.findOne(client.id);
   }
 }
 

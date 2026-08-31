@@ -3,6 +3,16 @@ import { PaginatedResponse } from './projects';
 
 export type ClientStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
+export interface ClientMedia {
+  id: string;
+  url: string;
+  fileName: string;
+  mimeType?: string;
+  fileSize?: number;
+  type?: string;
+  altText?: string;
+}
+
 export interface Client {
   id: string;
   businessName: string;
@@ -16,8 +26,16 @@ export interface Client {
   country?: string | null;
   postalCode?: string | null;
   logoMediaId?: string | null;
+  logoMedia?: ClientMedia | null;
   status: ClientStatus;
-  websites?: any[];
+  websites?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+    isPublished: boolean;
+    media?: ClientMedia[];
+  }>;
   createdAt: string;
   updatedAt: string;
 }
