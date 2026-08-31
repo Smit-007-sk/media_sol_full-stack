@@ -71,10 +71,10 @@ export function AuroraServices({ items, design, theme }: AuroraServicesProps) {
           <span className="text-xs uppercase font-bold tracking-[0.2em] font-mono inline-block" style={{ color: 'var(--theme-secondary, #C9A45C)' }}>
             EXECUTIVE PRACTICE AREAS
           </span>
-          <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: 'var(--theme-heading-font, Cormorant Garamond, serif)', color: 'var(--theme-primary, #075C45)' }}>
+          <h2 className="text-3xl sm:text-4xl font-bold" style={{ fontFamily: 'var(--theme-heading-font, Cormorant Garamond, serif)', color: 'var(--theme-heading-color, var(--theme-text, #FFFFFF))' }}>
             Tailored Governance & Strategic Solutions
           </h2>
-          <p className="text-sm text-stone-600 font-sans">
+          <p className="text-sm font-sans" style={{ color: 'var(--theme-text-muted, rgba(243, 244, 246, 0.85))' }}>
             Methodical frameworks designed to optimize executive decision-making, mitigate fiduciary liability, and enhance investor confidence.
           </p>
         </div>

@@ -194,24 +194,24 @@ export function AuroraHero({ data, design, theme }: AuroraHeroProps) {
             <span
               className="inline-flex items-center text-xs font-semibold uppercase tracking-[0.25em] px-4 py-1.5 rounded-full border shadow-sm whitespace-pre-line break-words [overflow-wrap:anywhere]"
               style={{
-                color: 'var(--theme-primary, #075C45)',
+                color: 'var(--theme-secondary, #C9A45C)',
                 borderColor: 'var(--theme-secondary, #C9A45C)',
-                backgroundColor: 'rgba(7, 92, 69, 0.06)',
+                backgroundColor: 'rgba(201, 164, 92, 0.1)',
               }}
             >
               {eyebrow}
             </span>
 
             <h1
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight whitespace-pre-line break-words [overflow-wrap:anywhere] max-w-full"
-              style={{ fontFamily: 'var(--theme-heading-font, Cormorant Garamond, serif)', color: 'var(--theme-primary, #075C45)' }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] tracking-tight whitespace-pre-line break-words [overflow-wrap:anywhere] max-w-full drop-shadow-sm"
+              style={{ fontFamily: 'var(--theme-heading-font, Cormorant Garamond, serif)', color: 'var(--theme-heading-color, var(--theme-text, #FFFFFF))' }}
             >
               {title}
             </h1>
 
             <p
-              className="text-base sm:text-lg text-stone-600 leading-relaxed font-sans max-w-xl whitespace-pre-line break-words [overflow-wrap:anywhere]"
-              style={{ fontFamily: 'var(--theme-body-font, Inter, sans-serif)' }}
+              className="text-base sm:text-lg leading-relaxed font-sans max-w-xl whitespace-pre-line break-words [overflow-wrap:anywhere]"
+              style={{ fontFamily: 'var(--theme-body-font, Inter, sans-serif)', color: 'var(--theme-text-muted, rgba(243, 244, 246, 0.85))' }}
             >
               {description}
             </p>
@@ -227,18 +227,18 @@ export function AuroraHero({ data, design, theme }: AuroraHeroProps) {
               )}
             </div>
 
-            <div className="pt-8 border-t border-stone-300/60 grid grid-cols-3 gap-4 text-xs sm:text-sm">
+            <div className="pt-8 border-t border-stone-700/50 grid grid-cols-3 gap-4 text-xs sm:text-sm">
               <div className="flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-primary, #075C45)' }} />
-                <span className="font-semibold">Strategic Counsel</span>
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-secondary, #C9A45C)' }} />
+                <span className="font-semibold" style={{ color: 'var(--theme-text, #F1F5F9)' }}>Strategic Counsel</span>
               </div>
               <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-primary, #075C45)' }} />
-                <span className="font-semibold">Board Governance</span>
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-secondary, #C9A45C)' }} />
+                <span className="font-semibold" style={{ color: 'var(--theme-text, #F1F5F9)' }}>Board Governance</span>
               </div>
               <div className="flex items-center space-x-2">
-                <Award className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-primary, #075C45)' }} />
-                <span className="font-semibold">ESG Frameworks</span>
+                <Award className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--theme-secondary, #C9A45C)' }} />
+                <span className="font-semibold" style={{ color: 'var(--theme-text, #F1F5F9)' }}>ESG Frameworks</span>
               </div>
             </div>
           </div>

@@ -17,6 +17,8 @@ export function computeThemeCssVariables(theme?: Theme | Partial<Theme> | null):
       '--theme-accent': '#EAB308',
       '--theme-background': '#0F1412',
       '--theme-text': '#F3F4F6',
+      '--theme-heading-color': '#FFFFFF',
+      '--theme-text-muted': 'rgba(243, 244, 246, 0.85)',
       '--theme-heading-font': 'Playfair Display, serif',
       '--theme-body-font': 'Inter, sans-serif',
       '--theme-surface': '#161C19',
@@ -33,7 +35,20 @@ export function computeThemeCssVariables(theme?: Theme | Partial<Theme> | null):
   const secondary = theme.secondaryColor || '#C9A45C';
   const accent = theme.accentColor || secondary;
   const background = theme.backgroundColor || '#0F1412';
-  const text = theme.textColor || '#F3F4F6';
+  
+  const isLight = (bg: string) => {
+    if (!bg) return false;
+    const clean = bg.toLowerCase().trim();
+    return clean === '#fff' || clean === '#ffffff' || clean === '#fbf8f1' || clean === '#f8fafc' || clean === '#f3f4f6' || clean.startsWith('#f') || clean.startsWith('#e');
+  };
+
+  const light = isLight(background);
+  const rawText = theme.textColor || (light ? '#1F2937' : '#F3F4F6');
+  const text = light ? (rawText.startsWith('#f') || rawText.startsWith('#e') ? '#1E293B' : rawText) : (rawText.startsWith('#1') || rawText.startsWith('#0') ? '#F3F4F6' : rawText);
+  const headingColor = (theme as any)?.headingColor || (light ? primary : '#FFFFFF');
+  const textMuted = light ? '#64748B' : 'rgba(243, 244, 246, 0.85)';
+
+
   const headingFont = theme.headingFont || theme.bodyFont || 'Inter, sans-serif';
   const bodyFont = theme.bodyFont || 'Inter, sans-serif';
 
@@ -84,9 +99,11 @@ export function computeThemeCssVariables(theme?: Theme | Partial<Theme> | null):
     '--theme-accent': accent,
     '--theme-background': background,
     '--theme-text': text,
+    '--theme-heading-color': headingColor,
+    '--theme-text-muted': textMuted,
     '--theme-heading-font': headingFont,
     '--theme-body-font': bodyFont,
-    '--theme-surface': 'rgba(255, 255, 255, 0.04)',
+    '--theme-surface': light ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.05)',
     '--theme-border': `${secondary}40`,
 
     '--design-section-spacing': sectionSpacing,
