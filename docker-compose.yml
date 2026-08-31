@@ -1,0 +1,78 @@
+services:
+  # ----------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: emperor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgrespassword2026}
+      POSTGRES_DB: ${DB_NAME:-emperor_smart_solutions}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-emperor_smart_solutions}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - emperor-network
+
+  # ----------------------------------------------------
+  # 2. NestJS REST API Backend Service
+  # ----------------------------------------------------
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: emperor-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: "postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgrespassword2026}@postgres:5432/${DB_NAME:-emperor_smart_solutions}?schema=public"
+      JWT_SECRET: ${JWT_SECRET:-emperor_super_secure_jwt_secret_production_key_2026}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-ChangeMe123!}
+    ports:
+      - "4000:4000"
+    networks:
+      - emperor-network
+
+  # ----------------------------------------------------
+  # 3. Next.js 14 Frontend Service
+  # ----------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+    container_name: emperor-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+    ports:
+      - "3000:3000"
+    networks:
+      - emperor-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  emperor-network:
+    driver: bridge
