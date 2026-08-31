@@ -1,0 +1,41 @@
+"use client";
+
+import React from "react";
+import { VideoSectionData } from "@/types/template";
+import { VideoPlaceholder } from "@/components/common/VideoPlaceholder";
+import { Reveal } from "@/components/common/Reveal";
+
+export interface Video02Props {
+  data: VideoSectionData;
+}
+
+export function Video02({ data }: Video02Props) {
+  return (
+    <section id="video" className="py-24 lg:py-32 bg-stone-950 text-emperor-white-warm border-t border-b border-stone-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <Reveal direction="up">
+            <span className="text-xs uppercase tracking-[0.3em] font-sans text-emperor-gold">
+              {data.eyebrow}
+            </span>
+            <h2 className="font-serif text-3xl sm:text-5xl font-light text-emperor-white-warm mt-3">
+              {data.title}
+            </h2>
+            <p className="font-sans text-sm sm:text-base text-stone-400 mt-3">
+              {data.description}
+            </p>
+          </Reveal>
+        </div>
+
+        <Reveal direction="up" delay={0.2}>
+          <VideoPlaceholder
+            media={data.media}
+            title={data.title}
+            description={data.description}
+            aspectRatio="21/9"
+          />
+        </Reveal>
+      </div>
+    </section>
+  );
+}

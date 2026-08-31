@@ -1,0 +1,33 @@
+# Backend NestJS .gitignore
+
+# Dependencies
+node_modules/
+
+# Compiled output
+dist/
+build/
+
+# Environment files
+.env
+.env.production
+.env.staging
+.env.local
+
+# Databases & local storage
+*.db
+*.sqlite
+*.db-journal
+
+# Debug logs & scratch
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+logs/
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+scratch/

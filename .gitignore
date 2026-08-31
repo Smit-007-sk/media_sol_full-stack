@@ -1,0 +1,50 @@
+# Root Workspace .gitignore
+
+# Node dependencies
+node_modules/
+**/node_modules/
+.pnp
+.pnp.*
+
+# Build & compiled output
+dist/
+**/dist/
+.next/
+**/.next/
+out/
+**/out/
+build/
+**/build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.env
+
+# SQLite databases & temp DB files
+*.db
+*.sqlite
+*.sqlite-journal
+*.db-journal
+
+# Logs & Debug
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+scratch/
