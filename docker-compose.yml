@@ -4,7 +4,7 @@ services:
   # ----------------------------------------------------
   postgres:
     image: postgres:16-alpine
-    container_name: emperor-postgres
+    container_name: media-sol-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
@@ -29,7 +29,7 @@ services:
     build:
       context: ./Backend
       dockerfile: Dockerfile
-    container_name: emperor-backend
+    container_name: media-sol-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -41,7 +41,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-emperor_super_secure_jwt_secret_production_key_2026}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       BCRYPT_SALT_ROUNDS: ${BCRYPT_SALT_ROUNDS:-12}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
       DEV_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:-ChangeMe123!}
     ports:
       - "${BACKEND_PORT:-4000}:4000"
@@ -57,7 +57,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
-    container_name: emperor-frontend
+    container_name: media-sol-frontend
     restart: unless-stopped
     depends_on:
       - backend
