@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --color-brand-green: #072B1E;
+  --color-brand-green-hover: #0C3828;
+  --color-brand-gold: #C09A5B;
+  --color-brand-gold-dark: #A78143;
+  --color-brand-bg: #F4F1EA;
+  --color-brand-card: #FAF8F4;
+  --color-brand-text: #1C1E1B;
+  --color-brand-muted: #5F6460;
+}
+
+:root {
+  --background: #F4F1EA;
+  --foreground: #1C1E1B;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #F4F1EA;
+  color: #1C1E1B;
+  font-family: var(--font-jakarta), sans-serif;
+  overflow-x: clip;
+}
+
+/* Custom Serif utilities */
+.font-serif {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+.font-sans {
+  font-family: var(--font-jakarta), sans-serif;
+}
+
+/* Golden text gradient */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #C69D66 0%, #A57D3F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Soft leaf shadow atmospheric overlay */
+.leaf-shadow-bg {
+  background: radial-gradient(circle at 85% 20%, rgba(240, 235, 226, 0.4) 0%, rgba(244, 241, 234, 1) 70%);
+}
+
+/* Glassmorphism feature pill */
+.glass-feature-bar {
+  background: rgba(250, 248, 244, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(220, 215, 205, 0.7);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+}
+
+/* Hover transitions */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
