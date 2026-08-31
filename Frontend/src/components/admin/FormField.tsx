@@ -14,12 +14,12 @@ export interface FormFieldProps {
 export function FormField({ label, error, required = false, helpText, labelClassName, children }: FormFieldProps) {
   return (
     <div className="space-y-1.5 font-sans">
-      <label className={`block text-[11px] font-extrabold uppercase tracking-wider text-slate-200 [aside_&]:text-slate-200 [form_&]:text-slate-200 ${labelClassName || ''}`}>
-        {label} {required && <span className="text-rose-400 font-bold">*</span>}
+      <label className={`block text-[11px] font-extrabold uppercase tracking-wider text-slate-800 [aside_&]:text-slate-200 [nav_&]:text-slate-200 ${labelClassName || ''}`}>
+        {label} {required && <span className="text-rose-600 font-bold">*</span>}
       </label>
       {children}
-      {helpText && !error && <p className="text-[11px] text-slate-400 font-medium mt-1">{helpText}</p>}
-      {error && <p className="text-[11px] text-rose-400 font-bold mt-1">{error}</p>}
+      {helpText && !error && <p className="text-[11px] text-slate-500 [aside_&]:text-slate-400 font-medium mt-1">{helpText}</p>}
+      {error && <p className="text-[11px] text-rose-600 [aside_&]:text-rose-400 font-bold mt-1">{error}</p>}
     </div>
   );
 }
