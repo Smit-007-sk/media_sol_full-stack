@@ -27,8 +27,13 @@ import {
   Layout,
   CheckCircle2,
   Crown,
+  Eye,
+  Trash2,
+  X,
+  ZoomIn,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
 
 const includedItems = [
   {
@@ -110,12 +115,113 @@ const featuresList = [
   "Blog Section",
 ];
 
+interface FilePreviewProps {
+  file: File;
+  onRemove: () => void;
+  onPreview: (url: string, name: string) => void;
+  badge?: string;
+  theme?: "default" | "emerald";
+}
+
+function FilePreviewCard({ file, onRemove, onPreview, badge, theme = "default" }: FilePreviewProps) {
+  const [objectUrl, setObjectUrl] = useState<string>("");
+
+  useEffect(() => {
+    let url = "";
+    if (file && typeof window !== "undefined") {
+      try {
+        url = URL.createObjectURL(file);
+        setObjectUrl(url);
+      } catch (err) {
+        console.error("Error creating object URL:", err);
+      }
+    }
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|svg|webp|gif|bmp|ico)$/i.test(file.name);
+
+  return (
+    <div
+      className={`group relative flex items-center gap-3 p-2 rounded-xl border transition-all duration-200 shadow-sm ${
+        theme === "emerald"
+          ? "bg-[#F0FDF4] border-[#BBF7D0] hover:border-[#059669]"
+          : "bg-[#FAF8F4] border-[#E2DDD3] hover:border-[#072B1E]"
+      }`}
+    >
+      {/* Visual Thumbnail */}
+      <div
+        onClick={() => objectUrl && onPreview(objectUrl, file.name)}
+        className="w-12 h-12 rounded-lg bg-white/90 border border-black/5 flex items-center justify-center relative overflow-hidden shrink-0 cursor-pointer shadow-inner group/thumb"
+        title="Click to view full preview"
+      >
+        {isImage && objectUrl ? (
+          <img
+            src={objectUrl}
+            alt={file.name}
+            className="w-full h-full object-contain p-0.5 transition-transform duration-200 group-hover/thumb:scale-105"
+          />
+        ) : (
+          <FileText className="w-5 h-5 text-[#8C908D]" />
+        )}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+          <ZoomIn className="w-4 h-4 text-white drop-shadow" />
+        </div>
+      </div>
+
+      {/* File Details */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          {badge && (
+            <span
+              className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                theme === "emerald"
+                  ? "bg-[#DCFCE7] text-[#15803D]"
+                  : "bg-[#EFECE5] text-[#072B1E]"
+              }`}
+            >
+              {badge}
+            </span>
+          )}
+          <span className="text-xs font-semibold text-[#1C1E1B] truncate max-w-[130px] sm:max-w-[170px]" title={file.name}>
+            {file.name}
+          </span>
+        </div>
+        <p className="text-[10px] text-[#717672] font-medium">
+          {(file.size / (1024 * 1024)).toFixed(2)} MB •{" "}
+          <button
+            type="button"
+            onClick={() => objectUrl && onPreview(objectUrl, file.name)}
+            className="text-[#072B1E] font-bold hover:underline"
+          >
+            Preview
+          </button>
+        </p>
+      </div>
+
+      {/* Remove Button */}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="p-1.5 rounded-lg text-[#8C908D] hover:text-[#DC2626] hover:bg-[#FEE2E2] transition-colors shrink-0"
+        title="Remove this file"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function LeadFormSection() {
   const [step, setStep] = useState(1);
   const MAX_BYTES = 10 * 1024 * 1024; // 10MB
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [altPhoneError, setAltPhoneError] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{ url: string; name: string } | null>(null);
+
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -707,22 +813,15 @@ export default function LeadFormSection() {
 
                         {/* Uploaded Logo Files List */}
                         {formData.logoFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5">
                             {formData.logoFiles.map((file, idx) => (
-                              <div
-                                key={idx}
-                                className="bg-[#EFECE5] border border-[#D0C9B8] text-[11px] font-semibold text-[#1C1E1B] rounded-lg px-2.5 py-1 flex items-center gap-1.5"
-                              >
-                                <span className="max-w-[120px] truncate">{file.name}</span>
-                                <span className="text-[9px] text-[#5A5F5B]">({(file.size / (1024 * 1024)).toFixed(1)}MB)</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeLogoFile(idx)}
-                                  className="text-[#991B1B] hover:text-black font-bold ml-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
+                              <FilePreviewCard
+                                key={`logo-${idx}-${file.name}`}
+                                file={file}
+                                badge="Logo"
+                                onRemove={() => removeLogoFile(idx)}
+                                onPreview={(url, name) => setPreviewModal({ url, name })}
+                              />
                             ))}
                           </div>
                         )}
@@ -747,22 +846,16 @@ export default function LeadFormSection() {
 
                         {/* Uploaded Banner Files List */}
                         {formData.bannerFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5">
                             {formData.bannerFiles.map((file, idx) => (
-                              <div
-                                key={idx}
-                                className="bg-[#E6F9F3] border border-[#A7F3D0] text-[11px] font-semibold text-[#072B1E] rounded-lg px-2.5 py-1 flex items-center gap-1.5"
-                              >
-                                <span className="max-w-[120px] truncate">{file.name}</span>
-                                <span className="text-[9px] text-[#059669]">({(file.size / (1024 * 1024)).toFixed(1)}MB)</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeBannerFile(idx)}
-                                  className="text-[#991B1B] hover:text-black font-bold ml-1"
-                                >
-                                  ×
-                                </button>
-                              </div>
+                              <FilePreviewCard
+                                key={`banner-${idx}-${file.name}`}
+                                file={file}
+                                badge="Banner"
+                                theme="emerald"
+                                onRemove={() => removeBannerFile(idx)}
+                                onPreview={(url, name) => setPreviewModal({ url, name })}
+                              />
                             ))}
                           </div>
                         )}
@@ -954,6 +1047,56 @@ export default function LeadFormSection() {
           <ArrowRight className="w-4 h-4" />
         </Link>
       </motion.div>
+
+      {/* Lightbox / Full Image Preview Modal */}
+      {previewModal && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewModal(null)}
+        >
+          <div
+            className="relative max-w-2xl w-full bg-white border border-[#DDD6C8] rounded-2xl p-5 shadow-2xl space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E5DFD3] pb-3">
+              <div className="flex items-center gap-2 max-w-[80%]">
+                <Eye className="w-4 h-4 text-[#072B1E]" />
+                <span className="text-xs sm:text-sm font-bold text-[#1C1E1B] truncate">
+                  {previewModal.name}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="w-8 h-8 rounded-full bg-[#EFECE5] hover:bg-[#E2DDD3] text-[#1C1E1B] flex items-center justify-center font-bold transition-colors"
+                title="Close Preview"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="w-full min-h-[220px] max-h-[60vh] flex items-center justify-center bg-[#FAF8F4] border border-[#E5DFD3] rounded-xl overflow-hidden p-3">
+              <img
+                src={previewModal.url}
+                alt={previewModal.name}
+                className="max-h-[55vh] max-w-full object-contain rounded-lg shadow-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-[#717672] pt-1">
+              <span>Image Asset Preview</span>
+              <button
+                type="button"
+                onClick={() => setPreviewModal(null)}
+                className="text-[#072B1E] font-bold hover:underline"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
+
