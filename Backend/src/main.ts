@@ -35,16 +35,17 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps, curl, postman)
       if (!origin) return callback(null, true);
 
-      // Allow any localhost port in development
-      if (/^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      // If wildcard is configured or if origin matches
+      if (corsOriginsRaw === '*' || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      // Allow any localhost or IP address with any port
+      if (/^https?:\/\/(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin)) {
         return callback(null, true);
       }
 
-      callback(null, false);
+      callback(null, true);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
