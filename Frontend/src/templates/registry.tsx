@@ -114,19 +114,20 @@ export function resolveTemplateDefinition(
   template?: Template | Partial<Template> | null
 ): TemplateDefinition | undefined {
   const activeTemplate = template || website?.template;
-  if (!activeTemplate && !website) return undefined;
 
-  const key = (activeTemplate?.templateKey || '').toLowerCase();
-  const slug = (activeTemplate?.slug || website?.slug || '').toLowerCase();
-  const id = (activeTemplate?.id || website?.templateId || '').toLowerCase();
+  const key = (activeTemplate?.templateKey || '').toLowerCase().trim();
+  const slug = (activeTemplate?.slug || website?.slug || '').toLowerCase().trim();
+  const id = (activeTemplate?.id || website?.templateId || '').toLowerCase().trim();
   const projName = (activeTemplate?.project?.name || '').toLowerCase();
 
-  const isProject2 = projName.includes('project-2') || slug.includes('project-2');
+  const isProject2 = projName.includes('project-2') || slug.includes('project-2') || key.includes('project-2') || key.includes('project2');
   const projPrefix = isProject2 ? 'project-2' : 'project-1';
 
   if (key) {
     const compResult = registry.get(`${projPrefix}:${key}`);
     if (compResult) return compResult;
+    const keyResult = registry.get(key);
+    if (keyResult) return keyResult;
   }
   if (id) {
     const idResult = registry.get(id);
@@ -136,13 +137,28 @@ export function resolveTemplateDefinition(
     const slugResult = registry.get(slug);
     if (slugResult) return slugResult;
   }
+
+  // Normalize key lookup (e.g. 'template-05' matches 'template05' or 'template-5')
   if (key) {
-    const keyResult = registry.get(key);
-    if (keyResult) return keyResult;
+    const norm = key.replace(/[^a-z0-9]/g, '');
+    const found = registeredList.find((d) => {
+      const cKey = (d.config.componentKey || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const sKey = (d.config.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const iKey = (d.config.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return cKey === norm || sKey === norm || iKey === norm || cKey.includes(norm);
+    });
+    if (found) return found;
+  }
+
+  // Graceful fallback to the primary modern template (Aurora Corporate / registeredList[0])
+  if (registeredList.length > 0) {
+    return registeredList[0];
   }
 
   return undefined;
 }
+
+
 
 // 4. Retrieve All Registered Template Configurations
 export function getAllTemplateConfigs(): TemplateConfig[] {
