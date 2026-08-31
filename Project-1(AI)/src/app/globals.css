@@ -80,6 +80,28 @@
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Marketing Site Custom Utilities */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #C69D66 0%, #A57D3F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.leaf-shadow-bg {
+  background: radial-gradient(circle at 85% 20%, rgba(240, 235, 226, 0.4) 0%, rgba(244, 241, 234, 1) 70%);
+}
+
+.glass-feature-bar {
+  background: rgba(250, 248, 244, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(220, 215, 205, 0.7);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+}
+
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
@@ -97,3 +119,4 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #E86B5A;
 }
+
