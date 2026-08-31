@@ -34,6 +34,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { submitLeadApi } from "@/api/clients";
+
 
 
 
@@ -412,13 +414,9 @@ export default function LeadFormSection() {
         bannerAssets,
       };
 
-      // 2. Post directly to NestJS Backend API (port 4000)
+      // 2. Post directly to NestJS Central API
       try {
-        await fetch('http://localhost:4000/api/clients/submit-lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(leadPayload),
-        });
+        await submitLeadApi(leadPayload);
       } catch (err) {
         console.warn('Backend API submit lead warning:', err);
       }

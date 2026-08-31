@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEmail, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsEmail, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UploadedAssetDto {
   @ApiProperty({ description: 'File data URL or image URL' })
@@ -82,14 +83,19 @@ export class SubmitLeadDto {
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'Uploaded logo files' })
+  @ApiPropertyOptional({ description: 'Uploaded logo files', type: [UploadedAssetDto] })
   @IsArray()
   @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UploadedAssetDto)
   logoAssets?: UploadedAssetDto[];
 
-  @ApiPropertyOptional({ description: 'Uploaded banner and media files' })
+  @ApiPropertyOptional({ description: 'Uploaded banner and media files', type: [UploadedAssetDto] })
   @IsArray()
   @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => UploadedAssetDto)
   bannerAssets?: UploadedAssetDto[];
 }
+
 

@@ -4,10 +4,15 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Increase payload limit to 50MB for image & asset uploads
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 4000);
@@ -22,6 +27,7 @@ async function bootstrap() {
 
   // Global Prefix
   app.setGlobalPrefix('api');
+
 
   // CORS Configuration
   app.enableCors({

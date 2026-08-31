@@ -74,3 +74,11 @@ export async function deleteClientApi(id: string) {
     method: 'DELETE',
   });
 }
+
+export async function submitLeadApi(payload: any) {
+  return apiRequest<{ success: boolean; data: Client }>('/clients/submit-lead', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+

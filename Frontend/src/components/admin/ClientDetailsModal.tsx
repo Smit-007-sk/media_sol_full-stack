@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Client } from '@/api/clients';
+import React, { useState, useEffect } from 'react';
+import { Client, getClientApi } from '@/api/clients';
 import { Modal } from './Modal';
 import { StatusBadge } from './StatusBadge';
 import {
@@ -21,6 +21,7 @@ import {
   X,
   Eye,
   ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,10 +31,28 @@ interface ClientDetailsModalProps {
   client: Client | null;
 }
 
-export function ClientDetailsModal({ isOpen, onClose, client }: ClientDetailsModalProps) {
+export function ClientDetailsModal({ isOpen, onClose, client: initialClient }: ClientDetailsModalProps) {
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+  const [client, setClient] = useState<Client | null>(initialClient);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    setClient(initialClient);
+    if (initialClient?.id && isOpen) {
+      setIsLoadingDetails(true);
+      getClientApi(initialClient.id)
+        .then((res) => {
+          if (res.success && res.data) {
+            setClient(res.data);
+          }
+        })
+        .catch((err) => console.error('Failed to fetch full client details:', err))
+        .finally(() => setIsLoadingDetails(false));
+    }
+  }, [initialClient, isOpen]);
 
   if (!client) return null;
+
 
   // Parse description lines for structured lead details
   const descLines = (client.description || '').split('\n').filter(Boolean);
