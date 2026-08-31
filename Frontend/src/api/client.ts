@@ -1,4 +1,23 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      return envUrl;
+    }
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      if (window.location.port === '3050') {
+        return `${protocol}//${hostname}:4050/api`;
+      }
+      if (window.location.port === '3000') {
+        return `${protocol}//${hostname}:4000/api`;
+      }
+      return `${protocol}//${hostname}${window.location.port ? `:${window.location.port}` : ''}/api`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+}
 
 export class ApiError extends Error {
   statusCode: number;
@@ -64,7 +83,8 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
   try {
     const response = await fetch(url, {
