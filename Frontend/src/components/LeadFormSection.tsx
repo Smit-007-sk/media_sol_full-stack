@@ -449,8 +449,20 @@ export default function LeadFormSection() {
     }
   };
 
+  // Auto-scroll on mount if navigating directly with #claim-website hash on mobile/desktop
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window.location.hash === '#claim-website' || window.location.hash === '#claim-form' || window.location.hash === '#lead-form')) {
+      const el = document.getElementById('claim-website') || document.getElementById('lead-form');
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    }
+  }, []);
+
   return (
-    <section id="claim-website" className="relative w-full px-6 md:px-12 lg:px-16 xl:px-20 pt-16 pb-20 overflow-hidden">
+    <section id="offer-section" className="relative w-full px-6 md:px-12 lg:px-16 xl:px-20 pt-16 pb-20 overflow-hidden">
       {/* 1. Hero Offer & Lead Generation Form Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-start mb-20">
         {/* Left Column: Offer Copy & Features */}
@@ -537,11 +549,12 @@ export default function LeadFormSection() {
 
         {/* Right Column: 3-Step Interactive Form Card */}
         <motion.div
+          id="claim-website"
           initial={{ opacity: 0, x: 30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="lg:col-span-6 relative"
+          className="lg:col-span-6 relative scroll-mt-24 sm:scroll-mt-28"
         >
           <div className="bg-white border border-[#E5DFD3] rounded-3xl p-6 sm:p-8 shadow-xl relative">
             {/* Header Gift Badge */}
