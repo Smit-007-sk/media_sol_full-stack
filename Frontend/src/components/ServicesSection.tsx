@@ -307,7 +307,7 @@ export default function ServicesSection() {
       {/* ========================================================================= */}
       {/* 2. DESKTOP ANIMATED STICKY STAGE (SHOWN ONLY ON DESKTOP `lg:block`)        */}
       {/* ========================================================================= */}
-      <div ref={containerRef} className="hidden lg:block relative h-[220vh] w-full">
+      <div ref={containerRef} className="hidden lg:block relative h-[380vh] w-full">
         {/* Sticky Fullscreen Pinned Stage */}
         <div className="sticky top-0 h-screen w-full flex flex-col justify-center items-center py-4 px-6 md:px-12 lg:px-16 overflow-hidden z-30">
           <div className="w-full px-6 md:px-12 lg:px-16 xl:px-20 flex flex-col justify-center h-full max-h-[92vh]">

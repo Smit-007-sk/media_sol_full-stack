@@ -61,13 +61,7 @@ export default function Header() {
   };
 
   return (
-    <header
-      className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 lg:px-16 xl:px-20 py-4 transition-all duration-300 ${
-        scrolled
-          ? "bg-[#FAF8F4]/90 backdrop-blur-md shadow-sm border-b border-[#E2DDD3]"
-          : "bg-transparent"
-      }`}
-    >
+    <header className="w-full pt-6 pb-4 px-6 md:px-12 lg:px-16 xl:px-20 flex items-center justify-between z-50 relative">
       {/* Brand Logo */}
       <Link href="/" className="flex items-center gap-3 group">
         <img
