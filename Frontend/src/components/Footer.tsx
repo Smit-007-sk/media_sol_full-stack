@@ -15,10 +15,10 @@ const navLinks = [
 ];
 
 const socialLinks = [
-  { name: "INSTAGRAM", href: "https://instagram.com" },
-  { name: "LINKEDIN", href: "https://linkedin.com" },
-  { name: "FACEBOOK", href: "https://facebook.com" },
-  { name: "EMAIL", href: "mailto:info@emperormediasolutions.com" },
+  { name: "INSTAGRAM", href: "https://www.instagram.com/emperorsmartsolutions" },
+  { name: "LINKEDIN", href: "https://www.linkedin.com/company/emperor-smart-solutions/" },
+  { name: "FACEBOOK", href: "https://www.facebook.com/people/Vardaan-smart-solutions/61575906045475/" },
+  { name: "EMAIL", href: "mailto:emperorsmartsolutions@gmail.com" },
 ];
 
 export default function Footer() {
@@ -58,10 +58,10 @@ export default function Footer() {
                   NEW BUSINESS:
                 </span>
                 <a
-                  href="mailto:info@emperormediasolutions.com"
+                  href="mailto:emperorsmartsolutions@gmail.com"
                   className="text-sm sm:text-base font-bold text-white hover:text-[#C09A5B] transition-colors"
                 >
-                  info@emperormediasolutions.com
+                  emperorsmartsolutions@gmail.com
                 </a>
               </div>
             </div>
