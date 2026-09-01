@@ -68,17 +68,19 @@ export default function Header() {
           : "bg-transparent"
       }`}
     >
-      {/* Brand Logo & Name */}
+      {/* Brand Logo */}
       <Link href="/" className="flex items-center gap-3 group">
-        <div className="w-10 h-10 rounded-full bg-[#072B1E] flex items-center justify-center text-white font-serif font-bold text-lg tracking-wider group-hover:scale-105 transition-transform duration-300 shadow-md">
-          E
-        </div>
-        <div className="flex flex-col">
-          <span className="font-serif text-lg font-bold text-[#1C1E1B] tracking-tight leading-none">
+        <img
+          src="/emperor-logo.png"
+          alt="Emperor Media Solutions Logo"
+          className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)] contrast-110 group-hover:scale-105 transition-transform duration-300"
+        />
+        <div className="flex flex-col items-start">
+          <span className="font-serif font-bold text-2xl tracking-wide text-[#1C1E1B] leading-none">
             EMPEROR
           </span>
-          <span className="text-[10px] tracking-[0.25em] text-[#6B706C] uppercase font-sans font-medium">
-            MEDIA SOLUTION
+          <span className="text-[9px] font-sans font-semibold tracking-[0.28em] text-[#4A4E4B] uppercase mt-1">
+            MEDIA SOLUTIONS
           </span>
         </div>
       </Link>
