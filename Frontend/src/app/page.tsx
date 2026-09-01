@@ -10,11 +10,11 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#F4F1EA] flex flex-col justify-between overflow-x-clip relative selection:bg-[#C09A5B]/30">
+    <main className="min-h-screen bg-[#F4F1EA] selection:bg-[#C09A5B]/30 relative w-full">
       {/* Background ambient lighting overlay */}
       <div className="absolute top-0 right-0 w-full lg:w-3/4 h-[700px] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/70 via-[#F4F1EA]/40 to-transparent pointer-events-none z-0" />
 
-      <div className="relative z-10 flex flex-col justify-between flex-grow">
+      <div className="relative z-10 w-full">
         {/* Header Navigation */}
         <Header />
 

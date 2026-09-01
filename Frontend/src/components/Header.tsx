@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Crown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const navItems = [
@@ -17,47 +16,34 @@ const navItems = [
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("hero");
-  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-
-      if (pathname !== "/") return;
-      const sectionIds = ["hero", "offer", "why-us", "services", "solutions", "claim-website"];
-      const scrollPosition = window.scrollY + 200;
-
-      for (let i = sectionIds.length - 1; i >= 0; i--) {
-        const section = document.getElementById(sectionIds[i]);
-        if (section) {
-          const top = section.offsetTop;
-          if (scrollPosition >= top) {
-            setActiveSection(sectionIds[i]);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [pathname]);
 
   const handleClaimClick = (e: React.MouseEvent) => {
     setMobileMenuOpen(false);
-    if (typeof window !== 'undefined') {
-      const el = document.getElementById('claim-website') || document.getElementById('claim-form') || document.getElementById('lead-form');
+    if (typeof window !== "undefined") {
+      const el =
+        document.getElementById("claim-website") ||
+        document.getElementById("claim-form") ||
+        document.getElementById("lead-form");
       if (el) {
         e.preventDefault();
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.history.pushState(null, '', '#claim-website');
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.history.pushState(null, "", "#claim-website");
       } else {
-        window.location.href = '/#claim-website';
+        window.location.href = "/#claim-website";
       }
     }
+  };
+
+  // Determine active item based on current page URL
+  const isItemActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    if (href.startsWith("/#")) {
+      return false;
+    }
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
   return (
@@ -82,13 +68,13 @@ export default function Header() {
       {/* Desktop Navigation Links */}
       <nav className="hidden md:flex items-center gap-8 bg-[#EDE8DE]/60 border border-[#DCD5C5] px-6 py-2 rounded-full backdrop-blur-sm">
         {navItems.map((item) => {
-          const isActive = activeSection === item.id;
+          const isActive = isItemActive(item.href);
           return (
             <Link
               key={item.name}
               href={item.href}
               onClick={(e) => {
-                if (item.href.includes('#claim-website')) {
+                if (item.href.includes("#claim-website")) {
                   handleClaimClick(e);
                 }
               }}
@@ -152,22 +138,30 @@ export default function Header() {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="absolute top-full left-6 right-6 bg-[#FAF8F4] border border-[#E2DDD3] rounded-2xl p-6 shadow-xl flex flex-col gap-4 md:hidden z-50 animate-in fade-in slide-in-from-top-4">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={(e) => {
-                if (item.href.includes('#claim-website')) {
-                  handleClaimClick(e);
-                } else {
-                  setMobileMenuOpen(false);
-                }
-              }}
-              className="text-base py-2 border-b border-[#EBE6DC] font-medium text-[#1C1E1B] hover:text-[#C09A5B]"
-            >
-              {item.name}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = isItemActive(item.href);
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={(e) => {
+                  if (item.href.includes("#claim-website")) {
+                    handleClaimClick(e);
+                  } else {
+                    setMobileMenuOpen(false);
+                  }
+                }}
+                className={`text-base py-2 border-b border-[#EBE6DC] font-medium flex items-center justify-between ${
+                  isActive ? "text-[#072B1E] font-bold" : "text-[#1C1E1B] hover:text-[#C09A5B]"
+                }`}
+              >
+                <span>{item.name}</span>
+                {isActive && (
+                  <span className="w-2 h-2 rounded-full bg-[#C09A5B]" />
+                )}
+              </Link>
+            );
+          })}
           <Link
             href="/#claim-website"
             onClick={handleClaimClick}
