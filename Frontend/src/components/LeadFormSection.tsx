@@ -449,15 +449,34 @@ export default function LeadFormSection() {
     }
   };
 
-  // Auto-scroll on mount if navigating directly with #claim-website hash on mobile/desktop
+  // Auto-scroll on mount and on hashchange if navigating directly with #claim-website or #claim-form
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window.location.hash === '#claim-website' || window.location.hash === '#claim-form' || window.location.hash === '#lead-form')) {
-      const el = document.getElementById('claim-website') || document.getElementById('lead-form');
-      if (el) {
-        setTimeout(() => {
+    const handleScrollToForm = () => {
+      const hash = window.location.hash;
+      if (hash === '#claim-website' || hash === '#claim-form' || hash === '#lead-form' || hash === '#get-website') {
+        const el = document.getElementById('claim-website') || document.getElementById('claim-form') || document.getElementById('lead-form');
+        if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+        }
       }
+    };
+
+    if (typeof window !== 'undefined') {
+      // Execute immediately and with timeouts to handle image loading layout shifts
+      handleScrollToForm();
+      const t1 = setTimeout(handleScrollToForm, 100);
+      const t2 = setTimeout(handleScrollToForm, 400);
+      const t3 = setTimeout(handleScrollToForm, 800);
+      const t4 = setTimeout(handleScrollToForm, 1400);
+
+      window.addEventListener('hashchange', handleScrollToForm);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+        clearTimeout(t4);
+        window.removeEventListener('hashchange', handleScrollToForm);
+      };
     }
   }, []);
 
