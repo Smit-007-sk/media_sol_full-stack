@@ -2,11 +2,18 @@ export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
     if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      // If we are on HTTPS but envUrl is HTTP, prefer relative /api or same-origin to prevent Mixed Content
+      if (window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
+        return '/api';
+      }
       return envUrl;
     }
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      if (protocol === 'https:') {
+        return '/api';
+      }
       if (window.location.port === '3050') {
         return `${protocol}//${hostname}:4050/api`;
       }
