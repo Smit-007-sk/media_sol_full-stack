@@ -17,6 +17,8 @@ import { GalleryModule } from './content/gallery/gallery.module';
 import { TestimonialsModule } from './content/testimonials/testimonials.module';
 import { SocialLinksModule } from './content/social-links/social-links.module';
 import { MediaModule } from './content/media/media.module';
+import { CronModule } from './cron/cron.module';
+import { WebsiteGenerationModule } from './website-generation/website-generation.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { MediaModule } from './content/media/media.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    CronModule,
+    WebsiteGenerationModule,
     DatabaseModule,
     HealthModule,
     UsersModule,

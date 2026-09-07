@@ -354,11 +354,11 @@ export default function LeadFormSection() {
 
     if (step === 1) {
       if (!validatePhone(formData.phone)) {
-        setPhoneError("Please enter a valid 10-digit mobile/WhatsApp number.");
+        setPhoneError("Please enter a valid 10-digit phone number.");
         return;
       }
       if (formData.altPhone.trim() && !validatePhone(formData.altPhone)) {
-        setAltPhoneError("Please enter a valid 10-digit alternate mobile number.");
+        setAltPhoneError("Please enter a valid 10-digit WhatsApp number.");
         return;
       }
       setStep(2);
@@ -662,7 +662,7 @@ export default function LeadFormSection() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#1C1E1B] mb-1">Phone / WhatsApp Number *</label>
+                        <label className="block text-xs font-bold text-[#1C1E1B] mb-1">Phone Number *</label>
                         <div className="relative">
                           <Phone className="w-4 h-4 text-[#8C908D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input
@@ -684,7 +684,7 @@ export default function LeadFormSection() {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-[#1C1E1B] mb-1">Alternate Mobile Number (Optional)</label>
+                        <label className="block text-xs font-bold text-[#1C1E1B] mb-1">WhatsApp Number (Optional)</label>
                         <div className="relative">
                           <Phone className="w-4 h-4 text-[#8C908D] absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input

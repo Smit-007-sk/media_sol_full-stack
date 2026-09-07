@@ -71,9 +71,10 @@ model Template {
   templateKey  String
   description  String?
   previewImage String?
-  isActive     Boolean   @default(true)
+  isActive     Boolean                @default(true)
   websites     Website[]
-  createdAt    DateTime  @default(now())
+  generationJobs WebsiteGenerationJob[]
+  createdAt    DateTime               @default(now())
   updatedAt    DateTime  @updatedAt
 
   @@unique([projectId, templateKey])
@@ -94,6 +95,7 @@ model Client {
   country      String?
   status       ClientStatus @default(ACTIVE)
   websites     Website[]
+  generationJobs WebsiteGenerationJob[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -119,6 +121,7 @@ model Website {
   media        Media[]       @relation("WebsiteMedia")
   testimonials Testimonial[]
   socialLinks  SocialLink[]
+  generationJobs WebsiteGenerationJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -291,3 +294,61 @@ model SocialLink {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 }
+
+enum WebsiteRequestStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum GenerationJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model WebsiteRequest {
+  id                  String                @id @default(uuid())
+  fullName            String
+  email               String
+  phone               String?
+  alternatePhone      String?
+  businessName        String
+  category            String
+  description         String?
+  instagram           String?
+  facebook            String?
+  linkedin            String?
+  specialInstructions String?
+  selectedFeatures    Json?
+  assetReferences     Json?
+  status              WebsiteRequestStatus  @default(PENDING)
+  job                 WebsiteGenerationJob?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+}
+
+model WebsiteGenerationJob {
+  id                        String              @id @default(uuid())
+  requestId                 String              @unique
+  request                   WebsiteRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  status                    GenerationJobStatus @default(PENDING)
+  attempts                  Int                 @default(0)
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  errorMessage              String?
+  selectedTemplateId        String?
+  selectedTemplate          Template?           @relation(fields: [selectedTemplateId], references: [id], onDelete: SetNull)
+  templateSelectionMetadata Json?
+  aiGeneratedContent        Json?
+  aiGenerationMetadata      Json?
+  clientId                  String?
+  client                    Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  websiteId                 String?
+  website                   Website?            @relation(fields: [websiteId], references: [id], onDelete: SetNull)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+}
+

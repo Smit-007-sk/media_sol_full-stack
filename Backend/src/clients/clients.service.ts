@@ -8,10 +8,14 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { QueryClientDto } from './dto/query-client.dto';
 import { ClientStatus, Prisma } from '@prisma/client';
+import { WebsiteGenerationService } from '../website-generation/website-generation.service';
 
 @Injectable()
 export class ClientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly websiteGenerationService: WebsiteGenerationService,
+  ) {}
 
   async findAll(query: QueryClientDto) {
     const page = query.page || 1;
@@ -206,172 +210,22 @@ export class ClientsService {
   }
 
   async submitLead(dto: import('./dto/submit-lead.dto').SubmitLeadDto) {
-    let baseSlug = (dto.businessName || dto.fullName)
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    if (!baseSlug) baseSlug = 'lead-client';
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (await this.prisma.client.findFirst({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
-    const featureList = dto.selectedFeatures?.length ? dto.selectedFeatures.join(', ') : 'None';
-    const socialList = [
-      dto.instagram ? `Instagram: ${dto.instagram}` : '',
-      dto.facebook ? `Facebook: ${dto.facebook}` : '',
-      dto.linkedin ? `LinkedIn: ${dto.linkedin}` : '',
-    ]
-      .filter(Boolean)
-      .join(' | ');
-
-    const description = [
-      `Lead Contact: ${dto.fullName}`,
-      `Category: ${dto.category || 'General'}`,
-      dto.servicesDescription ? `Services/Requirements: ${dto.servicesDescription}` : '',
-      `Features Requested: ${featureList}`,
-      socialList ? `Social Media: ${socialList}` : '',
-      dto.altPhone ? `Alt Phone: ${dto.altPhone}` : '',
-      dto.notes ? `Notes: ${dto.notes}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    const client = await this.prisma.client.create({
-      data: {
-        businessName: dto.businessName.trim(),
-        slug,
-        email: dto.email.toLowerCase().trim(),
-        phone: dto.phone.trim(),
-        description,
-        status: ClientStatus.ACTIVE,
-      },
+    return await this.websiteGenerationService.createWebsiteRequest({
+      fullName: dto.fullName,
+      email: dto.email,
+      phone: dto.phone,
+      alternatePhone: dto.altPhone,
+      businessName: dto.businessName,
+      category: dto.category,
+      description: dto.servicesDescription,
+      instagram: dto.instagram,
+      facebook: dto.facebook,
+      linkedin: dto.linkedin,
+      specialInstructions: dto.notes,
+      selectedFeatures: dto.selectedFeatures,
+      logoAssets: dto.logoAssets,
+      bannerAssets: dto.bannerAssets,
     });
-
-    let createdWebsite: any = null;
-
-    try {
-      const firstTemplate = await this.prisma.template.findFirst();
-
-      if (firstTemplate) {
-        let siteSlug = `${slug}-site`;
-        let siteCounter = 1;
-        while (await this.prisma.website.findFirst({ where: { slug: siteSlug } })) {
-          siteSlug = `${slug}-site-${siteCounter}`;
-          siteCounter++;
-        }
-
-        createdWebsite = await this.prisma.website.create({
-          data: {
-            name: `${dto.businessName} Website`,
-            slug: siteSlug,
-            clientId: client.id,
-            templateId: firstTemplate.id,
-            status: 'DRAFT',
-            isPublished: false,
-          },
-        });
-      }
-    } catch (err) {
-      console.warn('Auto website creation for lead skipped:', err);
-    }
-
-    let primaryLogoMediaId: string | null = null;
-    let primaryBannerMediaId: string | null = null;
-
-    // Process uploaded logo assets
-    if (dto.logoAssets && dto.logoAssets.length > 0) {
-      for (const logo of dto.logoAssets) {
-        if (logo.url && logo.fileName) {
-          try {
-            const createdMedia = await this.prisma.media.create({
-              data: {
-                type: 'IMAGE',
-                url: logo.url,
-                fileName: logo.fileName,
-                storageKey: `client-logos/${Date.now()}-${logo.fileName}`,
-                mimeType: logo.mimeType || 'image/png',
-                fileSize: logo.fileSize || 102400,
-                altText: `${dto.businessName} Logo`,
-                websiteId: createdWebsite?.id || null,
-              },
-            });
-            if (!primaryLogoMediaId) {
-              primaryLogoMediaId = createdMedia.id;
-            }
-          } catch (e) {
-            console.error('Error saving logo media:', e);
-          }
-        }
-      }
-    }
-
-    // Process uploaded banner assets
-    if (dto.bannerAssets && dto.bannerAssets.length > 0) {
-      for (const banner of dto.bannerAssets) {
-        if (banner.url && banner.fileName) {
-          try {
-            const createdMedia = await this.prisma.media.create({
-              data: {
-                type: 'IMAGE',
-                url: banner.url,
-                fileName: banner.fileName,
-                storageKey: `client-banners/${Date.now()}-${banner.fileName}`,
-                mimeType: banner.mimeType || 'image/jpeg',
-                fileSize: banner.fileSize || 204800,
-                altText: `${dto.businessName} Banner Photo`,
-                websiteId: createdWebsite?.id || null,
-              },
-            });
-            if (!primaryBannerMediaId) {
-              primaryBannerMediaId = createdMedia.id;
-            }
-          } catch (e) {
-            console.error('Error saving banner media:', e);
-          }
-        }
-      }
-    }
-
-    // Link primary logo to client
-    if (primaryLogoMediaId) {
-      await this.prisma.client.update({
-        where: { id: client.id },
-        data: { logoMediaId: primaryLogoMediaId },
-      });
-    }
-
-    // Initialize Hero section on website with banner image
-    if (createdWebsite) {
-      try {
-        await this.prisma.hero.upsert({
-          where: { websiteId: createdWebsite.id },
-          update: {
-            title: dto.businessName,
-            description: dto.servicesDescription || `Welcome to ${dto.businessName}`,
-            ...(primaryBannerMediaId && { imageId: primaryBannerMediaId }),
-          },
-          create: {
-            websiteId: createdWebsite.id,
-            eyebrow: dto.category || 'Official Website',
-            title: dto.businessName,
-            description: dto.servicesDescription || `Welcome to ${dto.businessName}`,
-            primaryButtonText: 'Contact Us',
-            primaryButtonUrl: '#contact',
-            imageId: primaryBannerMediaId || null,
-          },
-        });
-      } catch (e) {
-        console.warn('Hero section setup skipped:', e);
-      }
-    }
-
-    return this.findOne(client.id);
   }
 }
 

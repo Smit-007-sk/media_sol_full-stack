@@ -194,7 +194,7 @@ export function ClientDetailsModal({ isOpen, onClose, client: initialClient }: C
               </div>
 
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Primary Phone / WhatsApp</span>
+                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Phone Number</span>
                 {client.phone ? (
                   <p className="font-mono font-bold text-slate-900">{client.phone}</p>
                 ) : (
@@ -203,7 +203,7 @@ export function ClientDetailsModal({ isOpen, onClose, client: initialClient }: C
               </div>
 
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Alternate Mobile</span>
+                <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">WhatsApp Number</span>
                 {altPhone ? (
                   <p className="font-mono font-bold text-slate-900">{altPhone}</p>
                 ) : (
