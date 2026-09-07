@@ -13,6 +13,7 @@ import {
   Settings,
   Crown,
   ChevronRight,
+  Inbox,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -29,6 +30,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Website Requests', href: '/website-requests', icon: Inbox },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
     { name: 'Template Gallery', href: '/templates', icon: LayoutTemplate },
     { name: 'Template Management', href: '/admin-templates', icon: Settings },

@@ -309,6 +309,11 @@ enum GenerationJobStatus {
   FAILED
 }
 
+enum GeneratedWebsiteStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model WebsiteRequest {
   id                  String                @id @default(uuid())
   fullName            String
@@ -326,9 +331,27 @@ model WebsiteRequest {
   assetReferences     Json?
   status              WebsiteRequestStatus  @default(PENDING)
   job                 WebsiteGenerationJob?
+  generatedWebsite    GeneratedWebsite?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 }
+
+model GeneratedWebsite {
+  id                String                 @id @default(uuid())
+  requestId         String                 @unique
+  request           WebsiteRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  slug              String?                @unique
+  html              String                 @default("")
+  css               String                 @default("")
+  javascript        String                 @default("")
+  assetMappings     Json?
+  publishedSnapshot Json?
+  status            GeneratedWebsiteStatus @default(DRAFT)
+  publishedAt       DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+}
+
 
 model WebsiteGenerationJob {
   id                        String              @id @default(uuid())
@@ -351,4 +374,5 @@ model WebsiteGenerationJob {
   createdAt                 DateTime            @default(now())
   updatedAt                 DateTime            @updatedAt
 }
+
 

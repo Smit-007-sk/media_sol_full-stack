@@ -34,6 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const getPageTitle = (path: string) => {
     if (path.startsWith('/dashboard')) return { title: 'Dashboard Overview', subtitle: 'System metrics and summary overview' };
+    if (path.startsWith('/website-requests')) return { title: 'Website Requests', subtitle: 'View and manage submitted free website leads' };
     if (path.startsWith('/projects')) return { title: 'Projects Management', subtitle: 'Organize and manage core system projects' };
     if (path.startsWith('/admin-templates')) return { title: 'Templates Management', subtitle: 'Manage reusable agency website templates' };
     if (path.startsWith('/clients')) return { title: 'Clients Directory', subtitle: 'Manage active and archived client accounts' };

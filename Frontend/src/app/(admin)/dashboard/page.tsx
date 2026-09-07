@@ -5,6 +5,7 @@ import { getClientsApi, Client } from '@/api/clients';
 import { getWebsitesApi, Website } from '@/api/websites';
 import { getProjectsApi, Project } from '@/api/projects';
 import { getTemplatesApi, Template } from '@/api/templates';
+import { getWebsiteRequestsApi, WebsiteRequest } from '@/api/websiteRequests';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { ClientDetailsModal } from '@/components/admin/ClientDetailsModal';
 import {
@@ -18,6 +19,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Eye,
+  Inbox,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,6 +29,7 @@ export default function DashboardPage() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [websiteRequestsCount, setWebsiteRequestsCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Client Details Modal State
@@ -34,17 +38,19 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [cliRes, webRes, prjRes, tplRes] = await Promise.all([
+      const [cliRes, webRes, prjRes, tplRes, reqRes] = await Promise.all([
         getClientsApi({ limit: 100 }),
         getWebsitesApi({ limit: 100 }),
         getProjectsApi({ limit: 100 }),
         getTemplatesApi({ limit: 100 }),
+        getWebsiteRequestsApi({ limit: 1 }),
       ]);
 
       if (cliRes.success) setClients(cliRes.data.items);
       if (webRes.success) setWebsites(webRes.data.items);
       if (prjRes.success) setProjects(prjRes.data.items);
       if (tplRes.success) setTemplates(tplRes.data.items);
+      if (reqRes.success) setWebsiteRequestsCount(reqRes.data.meta.total);
     } catch (err) {
       console.error('Failed to load dashboard statistics:', err);
     } finally {
@@ -81,14 +87,53 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <button
-          onClick={fetchDashboardData}
-          disabled={isLoading}
-          className="px-4 py-2 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl flex items-center space-x-2 transition-all shadow-sm shrink-0"
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Link
+            href="/website-requests"
+            className="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-[#FA8373] to-[#e06858] hover:from-[#f97361] hover:to-[#d0594a] rounded-xl flex items-center space-x-2 transition-all shadow-md shrink-0 transform hover:-translate-y-0.5 active:translate-y-0"
+          >
+            <Inbox className="w-4 h-4 text-white" />
+            <span>Website Requests ({websiteRequestsCount})</span>
+            <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Link>
+
+          <button
+            onClick={fetchDashboardData}
+            disabled={isLoading}
+            className="px-4 py-2 text-xs font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl flex items-center space-x-2 transition-all shadow-sm shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#FA8373] ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Action Feature Card: Website Requests & DeepSeek Generator */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-[#1E293B] to-slate-900 border border-slate-800 rounded-2xl text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-start space-x-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FA8373] to-[#e06858] flex items-center justify-center text-white shrink-0 shadow-md">
+            <Sparkles className="w-5 h-5 text-amber-100" />
+          </div>
+          <div>
+            <h2 className="text-sm font-black text-white flex items-center gap-2">
+              Website Requests & DeepSeek Generator
+              <span className="px-2 py-0.5 bg-[#FA8373]/20 text-[#FA8373] border border-[#FA8373]/30 rounded-full text-[10px] font-bold">
+                {websiteRequestsCount} Leads
+              </span>
+            </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Review incoming client website briefs, generate customized DeepSeek prompts, and paste HTML/CSS into the code workspace.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/website-requests"
+          className="px-5 py-2.5 bg-[#FA8373] hover:bg-[#f97361] text-white text-xs font-black rounded-xl flex items-center space-x-2 transition-all shadow-md shrink-0 transform hover:-translate-y-0.5 active:translate-y-0"
         >
-          <RefreshCw className={`w-3.5 h-3.5 text-[#FA8373] ${isLoading ? 'animate-spin' : ''}`} />
-          <span>Refresh Data</span>
-        </button>
+          <span>Open Website Requests</span>
+          <ArrowRight className="w-4 h-4 ml-1" />
+        </Link>
       </div>
 
       {/* Primary KPI Metrics Grid */}

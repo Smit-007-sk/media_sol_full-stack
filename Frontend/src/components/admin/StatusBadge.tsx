@@ -10,20 +10,34 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
-  const normalized = status ? status.toUpperCase() : 'UNKNOWN';
+  const raw = status ? status.toUpperCase() : 'UNKNOWN';
+  const normalized = raw === 'NO_WEBSITE' ? 'NO WEBSITE' : raw;
 
   let colorStyle = 'bg-stone-800 text-stone-300 border-stone-700';
 
   switch (normalized) {
     case 'ACTIVE':
     case 'PUBLISHED':
+    case 'COMPLETED':
       colorStyle = 'bg-emerald-950/70 text-emerald-300 border-emerald-800/50';
       break;
-    case 'INACTIVE':
-    case 'DRAFT':
+    case 'PENDING':
       colorStyle = 'bg-amber-950/70 text-amber-300 border-amber-800/50';
       break;
+    case 'PROCESSING':
+      colorStyle = 'bg-indigo-950/70 text-indigo-300 border-indigo-800/50';
+      break;
+    case 'INACTIVE':
+      colorStyle = 'bg-slate-800 text-slate-300 border-slate-700';
+      break;
+    case 'DRAFT':
+      colorStyle = 'bg-amber-950/50 text-amber-300 border-amber-800/60';
+      break;
+    case 'NO WEBSITE':
+      colorStyle = 'bg-slate-800/60 text-slate-400 border-slate-700/60';
+      break;
     case 'ARCHIVED':
+    case 'FAILED':
       colorStyle = 'bg-rose-950/70 text-rose-300 border-rose-800/50';
       break;
     case 'ADMIN':

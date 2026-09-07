@@ -134,3 +134,32 @@ docker compose up -d --build
 | **Mixed Content Warning** | Browser Console | Ensure frontend calls `/api` and Nginx has `proxy_set_header X-Forwarded-Proto https;`. |
 | **SSL Certificate Expired** | `sudo certbot certificates` | Renew with `sudo certbot renew --force-renewal && sudo systemctl reload nginx`. |
 | **Database Migrations** | `docker compose exec backend npx prisma migrate status` | Apply migrations with `docker compose exec backend npx prisma migrate deploy`. |
+
+---
+
+## 5. Published Static Website Production-Serving Architecture
+
+### 1. Request Flow (`/site/[slug]`):
+```
+Visitor Request -> Nginx (443 SSL) -> Next.js Frontend (/site/[slug])
+                                            |
+                         +------------------+------------------+
+                         |                                     |
+              (1) Generated Static Website?         (2) Legacy CMS Website?
+                         |                                     |
+           GET /api/website-requests/public-site/:slug    GET /api/websites/public/:slug
+                         |                                     |
+             Reads publishedSnapshot                Renders TemplateRenderer
+                         |
+           Sandboxed iframe (allow-scripts allow-forms)
+```
+
+### 2. Security & Isolation Model:
+- **Null-Origin Iframe**: `sandbox="allow-scripts allow-forms"`. Omission of `allow-same-origin` ensures generated JavaScript runs in a unique null origin with zero access to parent cookies, JWT tokens, `localStorage`, or the parent admin DOM.
+- **Authoritative Snapshot**: Live public visitors are served strictly from `publishedSnapshot`. Draft edits never mutate live content until explicitly updated.
+- **Server-Side Asset Validation**: Placeholders (`{{LOGO_URL}}`, `{{IMAGE_1_URL}}`) are mapped at publish-time and validated against request ownership. Dangerous schemes (`javascript:`, `vbscript:`, `file:`) are strictly rejected.
+- **Draft Privacy**: DRAFT and UNPUBLISHED websites return HTTP 404 to public callers.
+
+### 3. Caching & Lifecycle Revalidation:
+- Next.js dynamic client route (`/site/[slug]`) fetches published state on demand without static caching lock-in, ensuring instant availability upon publishing, immediate updates upon "Update Published Website", and instant 404 upon "Unpublish".
+

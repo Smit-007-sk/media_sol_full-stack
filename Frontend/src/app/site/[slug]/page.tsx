@@ -1,16 +1,30 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { getWebsitesApi, getWebsiteApi, Website } from '@/api/websites';
 import { fetchWebsiteFullContent, WebsiteContent } from '@/api/content';
+import { getPublicGeneratedWebsiteApi } from '@/api/websiteRequests';
 import { TemplateRenderer } from '@/components/TemplateRenderer';
 import { Loader2, AlertCircle, Lock, ArchiveX, ShieldAlert } from 'lucide-react';
+
+interface GeneratedSiteData {
+  slug: string;
+  businessName: string;
+  category: string;
+  html: string;
+  css: string;
+  javascript: string;
+  publishedAt?: string | null;
+}
+
+import { assemblePublishedDocument } from '@/utils/documentAssembler';
 
 export default function PublicWebsitePage() {
   const params = useParams();
   const slugOrId = (params.slug as string) || '';
 
+  const [generatedSite, setGeneratedSite] = useState<GeneratedSiteData | null>(null);
   const [website, setWebsite] = useState<Website | null>(null);
   const [content, setContent] = useState<WebsiteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,11 +33,25 @@ export default function PublicWebsitePage() {
   const loadPublicWebsite = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setGeneratedSite(null);
+    setWebsite(null);
 
     try {
+      // 1. Check if there is a published GeneratedWebsite with this slug
+      try {
+        const genRes = await getPublicGeneratedWebsiteApi(slugOrId);
+        if (genRes.success && genRes.data) {
+          setGeneratedSite(genRes.data);
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        // Fallback to legacy website CMS lookup
+      }
+
       let targetWebsite: Website | null = null;
 
-      // 1. Try fetching directly by ID
+      // 2. Try fetching legacy website directly by ID
       try {
         const directRes = await getWebsiteApi(slugOrId);
         if (directRes.success && directRes.data) {
@@ -33,7 +61,7 @@ export default function PublicWebsitePage() {
         // Ignore direct ID lookup failure and fallback to slug search
       }
 
-      // 2. Search by slug or ID if direct fetch didn't return
+      // 3. Search legacy website by slug or ID if direct fetch didn't return
       if (!targetWebsite) {
         const listRes = await getWebsitesApi({ limit: 100 });
         if (listRes.success && listRes.data?.items) {
@@ -56,7 +84,7 @@ export default function PublicWebsitePage() {
 
       setWebsite(targetWebsite);
 
-      // 3. Fetch Full Website Content if published
+      // 4. Fetch Full Website Content if published
       if (targetWebsite.isPublished && targetWebsite.status === 'PUBLISHED') {
         const fullContent = await fetchWebsiteFullContent(targetWebsite.id);
         setContent(fullContent);
@@ -73,10 +101,23 @@ export default function PublicWebsitePage() {
   }, [loadPublicWebsite]);
 
   useEffect(() => {
-    if (content?.theme?.seoTitle || website?.name) {
+    if (generatedSite?.businessName) {
+      document.title = `${generatedSite.businessName} | Official Website`;
+    } else if (content?.theme?.seoTitle || website?.name) {
       document.title = content?.theme?.seoTitle || `${website?.name} | Official Website`;
     }
-  }, [content, website]);
+  }, [generatedSite, content, website]);
+
+  const compiledGeneratedDoc = useMemo(() => {
+    if (!generatedSite) return '';
+    return assemblePublishedDocument(
+      generatedSite.html,
+      generatedSite.css,
+      generatedSite.javascript,
+      generatedSite.businessName
+    );
+  }, [generatedSite]);
+
 
   // Loading State
   if (isLoading) {
@@ -84,6 +125,20 @@ export default function PublicWebsitePage() {
       <div className="min-h-screen bg-[#090C0B] flex flex-col items-center justify-center space-y-4">
         <Loader2 className="w-10 h-10 text-[#C9A45C] animate-spin" />
         <p className="text-xs text-stone-400 font-mono tracking-wide">Loading Website Experience...</p>
+      </div>
+    );
+  }
+
+  // 1. Render Published Generated Static Website
+  if (generatedSite) {
+    return (
+      <div className="w-full min-h-screen bg-white">
+        <iframe
+          title={generatedSite.businessName}
+          sandbox="allow-scripts allow-forms"
+          srcDoc={compiledGeneratedDoc}
+          className="fixed inset-0 w-full h-full border-0 bg-white"
+        />
       </div>
     );
   }
@@ -164,3 +219,4 @@ export default function PublicWebsitePage() {
     </main>
   );
 }
+

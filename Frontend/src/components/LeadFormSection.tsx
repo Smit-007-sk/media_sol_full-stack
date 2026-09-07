@@ -34,6 +34,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { submitWebsiteRequestApi } from "@/api/websiteRequests";
 import { submitLeadApi } from "@/api/clients";
 
 
@@ -400,25 +401,36 @@ export default function LeadFormSection() {
       const leadPayload = {
         fullName: formData.fullName,
         email: formData.email,
-        phone: formData.phone,
-        altPhone: formData.altPhone,
+        phone: formData.phone || undefined,
+        alternatePhone: formData.altPhone || undefined,
         businessName: formData.businessName,
         category: formData.category === "Other / Custom" ? (formData.customCategory || "Other") : formData.category,
-        servicesDescription: formData.servicesDescription,
-        instagram: formData.instagram,
-        facebook: formData.facebook,
-        linkedin: formData.linkedin,
+        description: formData.servicesDescription || undefined,
+        instagram: formData.instagram || undefined,
+        facebook: formData.facebook || undefined,
+        linkedin: formData.linkedin || undefined,
+        specialInstructions: formData.notes || undefined,
         selectedFeatures: formData.selectedFeatures,
-        notes: formData.notes,
         logoAssets,
         bannerAssets,
       };
 
-      // 2. Post directly to NestJS Central API
+      // 2. Post directly to NestJS Website Requests API
       try {
-        await submitLeadApi(leadPayload);
+        await submitWebsiteRequestApi(leadPayload);
       } catch (err) {
-        console.warn('Backend API submit lead warning:', err);
+        console.warn('Backend API submit website-request warning:', err);
+        // Fallback to legacy endpoint if needed
+        try {
+          await submitLeadApi({
+            ...leadPayload,
+            altPhone: formData.altPhone,
+            servicesDescription: formData.servicesDescription,
+            notes: formData.notes,
+          });
+        } catch (fallbackErr) {
+          console.warn('Fallback submitLeadApi warning:', fallbackErr);
+        }
       }
 
       // 3. Backup to LocalStorage

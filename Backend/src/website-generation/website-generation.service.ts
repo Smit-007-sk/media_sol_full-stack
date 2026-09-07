@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import {
   GenerationJobStatus,
@@ -6,12 +12,43 @@ import {
   WebsiteRequestStatus,
   ClientStatus,
   WebsiteStatus,
+  GeneratedWebsite,
+  GeneratedWebsiteStatus,
+  Prisma,
 } from '@prisma/client';
+import { SaveGeneratedWebsiteDto } from './dto/save-generated-website.dto';
+
+export const RESERVED_SLUGS = new Set([
+  'admin',
+  'api',
+  'login',
+  'dashboard',
+  'website-requests',
+  'settings',
+  'auth',
+  'site',
+  'work',
+  'services',
+  'why-us',
+  'offer',
+  'templates',
+  'admin-templates',
+  'clients',
+  'websites',
+  'media',
+  'projects',
+  'null',
+  'undefined',
+  'public',
+  'static',
+]);
+
 import { TemplateSelectionService, TemplateSelectionResult } from './template-selection.service';
 import { AiContentGenerationService } from './ai-content-generation.service';
 import { AiGeneratedWebsiteContent, AiGenerationMetadata } from './ai-content-schema';
 import { TEMPLATE_DEFAULT_THEMES } from './template-defaults';
 import { CreateWebsiteRequestDto } from './dto/create-website-request.dto';
+import { QueryWebsiteRequestDto } from './dto/query-website-request.dto';
 
 @Injectable()
 export class WebsiteGenerationService {
@@ -94,6 +131,584 @@ export class WebsiteGenerationService {
       isExisting: false,
     };
   }
+
+  /**
+   * Admin: List all paginated website requests with search, request-status, and website-status filtering.
+   */
+  async findAllWebsiteRequests(query: QueryWebsiteRequestDto) {
+    const page = query.page || 1;
+    const limit = Math.min(query.limit || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.WebsiteRequestWhereInput = {};
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.websiteStatus) {
+      if (query.websiteStatus === 'NO_WEBSITE') {
+        where.generatedWebsite = null;
+      } else if (query.websiteStatus === 'DRAFT') {
+        where.generatedWebsite = { status: GeneratedWebsiteStatus.DRAFT };
+      } else if (query.websiteStatus === 'PUBLISHED') {
+        where.generatedWebsite = { status: GeneratedWebsiteStatus.PUBLISHED };
+      }
+    }
+
+    if (query.search) {
+      const s = query.search;
+      where.OR = [
+        { businessName: { contains: s, mode: 'insensitive' } },
+        { fullName: { contains: s, mode: 'insensitive' } },
+        { email: { contains: s, mode: 'insensitive' } },
+        { phone: { contains: s, mode: 'insensitive' } },
+        { category: { contains: s, mode: 'insensitive' } },
+        { generatedWebsite: { slug: { contains: s, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [filteredTotal, items, totalAllRequests, draftWebsitesCount, publishedWebsitesCount] = await Promise.all([
+      this.prisma.websiteRequest.count({ where }),
+      this.prisma.websiteRequest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          generatedWebsite: {
+            select: {
+              id: true,
+              requestId: true,
+              slug: true,
+              status: true,
+              publishedAt: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          job: {
+            select: {
+              id: true,
+              status: true,
+              selectedTemplateId: true,
+              clientId: true,
+              websiteId: true,
+              createdAt: true,
+              completedAt: true,
+              errorMessage: true,
+            },
+          },
+        },
+      }),
+      this.prisma.websiteRequest.count(),
+      this.prisma.generatedWebsite.count({ where: { status: GeneratedWebsiteStatus.DRAFT } }),
+      this.prisma.generatedWebsite.count({ where: { status: GeneratedWebsiteStatus.PUBLISHED } }),
+    ]);
+
+    const noWebsiteCount = Math.max(0, totalAllRequests - draftWebsitesCount - publishedWebsitesCount);
+
+    return {
+      items,
+      meta: {
+        page,
+        limit,
+        total: filteredTotal,
+        totalPages: Math.ceil(filteredTotal / limit) || 1,
+        metrics: {
+          total: totalAllRequests,
+          noWebsite: noWebsiteCount,
+          draft: draftWebsitesCount,
+          published: publishedWebsitesCount,
+        },
+      },
+    };
+  }
+
+  /**
+   * Admin: Get a specific website request by ID with complete details.
+   */
+  async findOneWebsiteRequest(id: string) {
+    const request = await this.prisma.websiteRequest.findUnique({
+      where: { id },
+      include: {
+        generatedWebsite: {
+          select: {
+            id: true,
+            requestId: true,
+            slug: true,
+            status: true,
+            publishedAt: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        job: {
+          include: {
+            selectedTemplate: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                templateKey: true,
+              },
+            },
+            client: {
+              select: {
+                id: true,
+                businessName: true,
+                slug: true,
+              },
+            },
+            website: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                status: true,
+                isPublished: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Website request with ID "${id}" not found`);
+    }
+
+    return request;
+  }
+
+  /**
+   * Helper: Validates and sanitizes asset mappings against the specific request's uploaded assets.
+   * Enforces server-side ownership so Client A assets cannot be mapped to Client B.
+   */
+  private validateAndSanitizeAssetMappings(
+    mappings: Record<string, string> | undefined | null,
+    requestAssetReferences: any,
+  ): Record<string, string> {
+    if (!mappings || typeof mappings !== 'object') {
+      return {};
+    }
+
+    const validUrls = new Set<string>();
+    const assetRefs = requestAssetReferences || {};
+    if (Array.isArray(assetRefs.logoAssets)) {
+      assetRefs.logoAssets.forEach((a: any) => {
+        if (a?.url && typeof a.url === 'string') validUrls.add(a.url);
+      });
+    }
+    if (Array.isArray(assetRefs.bannerAssets)) {
+      assetRefs.bannerAssets.forEach((a: any) => {
+        if (a?.url && typeof a.url === 'string') validUrls.add(a.url);
+      });
+    }
+
+    const sanitized: Record<string, string> = {};
+
+    for (const [rawKey, rawVal] of Object.entries(mappings)) {
+      if (!rawKey || !rawVal || typeof rawVal !== 'string') continue;
+
+      const trimmedKey = rawKey.trim();
+      const key = trimmedKey.startsWith('{{') && trimmedKey.endsWith('}}')
+        ? trimmedKey
+        : `{{${trimmedKey}}}`;
+
+      const val = rawVal.trim();
+      const lowerVal = val.toLowerCase();
+      if (
+        lowerVal.startsWith('javascript:') ||
+        lowerVal.startsWith('vbscript:') ||
+        lowerVal.startsWith('file:')
+      ) {
+        continue;
+      }
+
+      // If client uploaded assets exist, ensure the mapped asset strictly belongs to this request
+      if (validUrls.size > 0 && !validUrls.has(val)) {
+        continue;
+      }
+
+      sanitized[key] = val;
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Helper: Resolves placeholders in HTML safely from asset mappings.
+   * Authoritative: Uses the exact assetMappings captured in the published snapshot.
+   * Does NOT dynamically inject unmapped assets or fake images.
+   */
+  private resolveHtmlPlaceholders(
+    rawHtml: string,
+    assetMappings: Record<string, string> | null | undefined,
+    requestAssetReferences?: any,
+  ): string {
+    if (!rawHtml) return '';
+    let resolvedHtml = rawHtml;
+
+    const mappings = assetMappings || {};
+
+    const validUrls = new Set<string>();
+    if (requestAssetReferences) {
+      const assetRefs = requestAssetReferences as any;
+      if (Array.isArray(assetRefs.logoAssets)) {
+        assetRefs.logoAssets.forEach((a: any) => {
+          if (a?.url) validUrls.add(a.url.trim());
+        });
+      }
+      if (Array.isArray(assetRefs.bannerAssets)) {
+        assetRefs.bannerAssets.forEach((b: any) => {
+          if (b?.url) validUrls.add(b.url.trim());
+        });
+      }
+    }
+
+    // Resolve explicit asset mappings
+    for (const [placeholder, url] of Object.entries(mappings)) {
+      if (!url || typeof url !== 'string') continue;
+      const trimmedUrl = url.trim();
+      const lowerUrl = trimmedUrl.toLowerCase();
+      if (
+        lowerUrl.startsWith('javascript:') ||
+        lowerUrl.startsWith('vbscript:') ||
+        lowerUrl.startsWith('file:')
+      ) {
+        continue;
+      }
+
+      // If client uploaded assets exist, verify ownership strictly against this request
+      if (validUrls.size > 0 && !validUrls.has(trimmedUrl)) {
+        continue;
+      }
+
+      const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      resolvedHtml = resolvedHtml.replace(new RegExp(escapedPlaceholder, 'g'), trimmedUrl);
+    }
+
+    return resolvedHtml;
+  }
+
+  /**
+   * Admin: Retrieve the generated website code workspace for a WebsiteRequest.
+   * Returns draft version.
+   */
+  async getGeneratedWebsite(requestId: string): Promise<GeneratedWebsite> {
+    const request = await this.prisma.websiteRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Website request with ID "${requestId}" not found`);
+    }
+
+    const generatedWebsite = await this.prisma.generatedWebsite.findUnique({
+      where: { requestId },
+    });
+
+    if (!generatedWebsite) {
+      throw new NotFoundException(`Generated website workspace not found for request "${requestId}"`);
+    }
+
+    return generatedWebsite;
+  }
+
+  /**
+   * Admin: Save or update generated website draft code (HTML, CSS, JS, assetMappings, slug).
+   * Note: Does NOT modify publishedSnapshot, maintaining true draft/live isolation.
+   */
+  async saveGeneratedWebsite(
+    requestId: string,
+    dto: SaveGeneratedWebsiteDto,
+  ) {
+    const request = await this.prisma.websiteRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Website request with ID "${requestId}" not found`);
+    }
+
+    const html = dto.html !== undefined ? dto.html : '';
+    const css = dto.css !== undefined ? dto.css : '';
+    const javascript = dto.javascript !== undefined ? dto.javascript : '';
+    const status = dto.status || GeneratedWebsiteStatus.DRAFT;
+    const slug = dto.slug ? dto.slug.trim().toLowerCase() : undefined;
+
+    if (slug) {
+      this.validateSlug(slug);
+      const isAvailable = await this.checkSlugAvailability(slug, requestId);
+      if (!isAvailable.available) {
+        throw new ConflictException('Slug already exists. Please choose another slug.');
+      }
+    }
+
+    const sanitizedMappings = dto.assetMappings !== undefined
+      ? this.validateAndSanitizeAssetMappings(dto.assetMappings, request.assetReferences)
+      : undefined;
+
+    const generatedWebsite = await this.prisma.generatedWebsite.upsert({
+      where: { requestId },
+      create: {
+        requestId,
+        html,
+        css,
+        javascript,
+        status: dto.status || GeneratedWebsiteStatus.DRAFT,
+        slug: slug || null,
+        assetMappings: sanitizedMappings ? (sanitizedMappings as any) : null,
+      },
+      update: {
+        html,
+        css,
+        javascript,
+        ...(dto.status ? { status: dto.status } : {}),
+        ...(slug ? { slug } : {}),
+        ...(sanitizedMappings !== undefined ? { assetMappings: sanitizedMappings as any } : {}),
+      },
+    });
+
+    this.logger.log(`Saved generated website workspace for request ${requestId} (status: ${status})`);
+
+    return generatedWebsite;
+  }
+
+  /**
+   * Validates slug syntax and checks against reserved application keywords.
+   */
+  validateSlug(slug: string): void {
+    const s = (slug || '').trim().toLowerCase();
+    if (!s || s.length < 3) {
+      throw new BadRequestException('Slug must be at least 3 characters long');
+    }
+    if (s.length > 80) {
+      throw new BadRequestException('Slug must not exceed 80 characters');
+    }
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(s)) {
+      throw new BadRequestException(
+        'Slug must be lowercase and contain only alphanumeric characters separated by single hyphens (no leading or trailing hyphens).',
+      );
+    }
+    if (RESERVED_SLUGS.has(s)) {
+      throw new BadRequestException(`"${s}" is a reserved system path and cannot be used as a website slug.`);
+    }
+  }
+
+  /**
+   * Checks whether a slug is available across all GeneratedWebsites and legacy Websites.
+   */
+  async checkSlugAvailability(slug: string, excludeRequestId?: string): Promise<{ available: boolean; slug: string }> {
+    const s = (slug || '').trim().toLowerCase();
+    this.validateSlug(s);
+
+    const existingGenerated = await this.prisma.generatedWebsite.findFirst({
+      where: {
+        slug: s,
+        ...(excludeRequestId ? { NOT: { requestId: excludeRequestId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existingGenerated) {
+      return { available: false, slug: s };
+    }
+
+    const existingLegacy = await this.prisma.website.findUnique({
+      where: { slug: s },
+      select: { id: true },
+    });
+
+    if (existingLegacy) {
+      return { available: false, slug: s };
+    }
+
+    return { available: true, slug: s };
+  }
+
+  /**
+   * Admin: Publish a generated website with an explicit, verified slug and create an immutable published snapshot.
+   */
+  async publishGeneratedWebsite(requestId: string, slug: string) {
+    const s = (slug || '').trim().toLowerCase();
+    this.validateSlug(s);
+
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.websiteRequest.findUnique({
+        where: { id: requestId },
+      });
+      if (!request) {
+        throw new NotFoundException(`Website request with ID "${requestId}" not found`);
+      }
+
+      const generated = await tx.generatedWebsite.findUnique({
+        where: { requestId },
+      });
+      if (!generated) {
+        throw new NotFoundException(`Generated website workspace not found for request "${requestId}"`);
+      }
+      if (!generated.html || !generated.html.trim()) {
+        throw new BadRequestException('Cannot publish website: HTML content is empty. Please paste and save HTML code first.');
+      }
+
+      const existingGen = await tx.generatedWebsite.findFirst({
+        where: {
+          slug: s,
+          NOT: { requestId },
+        },
+      });
+      if (existingGen) {
+        throw new ConflictException('Slug already exists. Please choose another slug.');
+      }
+
+      const existingLegacy = await tx.website.findUnique({
+        where: { slug: s },
+      });
+      if (existingLegacy) {
+        throw new ConflictException('Slug already exists. Please choose another slug.');
+      }
+
+      const now = new Date();
+
+      // Snapshot the current draft state for live visitors
+      const publishedSnapshot = {
+        html: generated.html,
+        css: generated.css,
+        javascript: generated.javascript,
+        assetMappings: generated.assetMappings || {},
+        slug: s,
+        publishedAt: now.toISOString(),
+      };
+
+      const updated = await tx.generatedWebsite.update({
+        where: { requestId },
+        data: {
+          slug: s,
+          status: GeneratedWebsiteStatus.PUBLISHED,
+          publishedAt: now,
+          publishedSnapshot: publishedSnapshot as any,
+        },
+      });
+
+      await tx.websiteRequest.update({
+        where: { id: requestId },
+        data: { status: WebsiteRequestStatus.COMPLETED },
+      });
+
+      this.logger.log(`Published generated website "${s}" for request ${requestId}`);
+
+      return {
+        success: true,
+        slug: s,
+        url: `/site/${s}`,
+        status: updated.status,
+        publishedAt: updated.publishedAt,
+      };
+    });
+  }
+
+  /**
+   * Admin: Unpublish a generated website (reverts status to DRAFT).
+   */
+  async unpublishGeneratedWebsite(requestId: string) {
+    const request = await this.prisma.websiteRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request) {
+      throw new NotFoundException(`Website request with ID "${requestId}" not found`);
+    }
+
+    const generated = await this.prisma.generatedWebsite.findUnique({
+      where: { requestId },
+    });
+    if (!generated) {
+      throw new NotFoundException(`Generated website workspace not found for request "${requestId}"`);
+    }
+
+    const updated = await this.prisma.generatedWebsite.update({
+      where: { requestId },
+      data: {
+        status: GeneratedWebsiteStatus.DRAFT,
+      },
+    });
+
+    this.logger.log(`Unpublished generated website "${updated.slug || requestId}" for request ${requestId}`);
+
+    return {
+      success: true,
+      message: 'Website unpublished successfully. Public access is now offline.',
+      status: updated.status,
+      slug: updated.slug,
+    };
+  }
+
+  /**
+   * Public: Retrieve published GeneratedWebsite by slug.
+   * Serves the isolated publishedSnapshot and resolves mapped asset placeholders.
+   */
+  async getPublicGeneratedWebsite(slug: string) {
+    const s = (slug || '').trim().toLowerCase();
+    if (!s) {
+      throw new NotFoundException('Website not found');
+    }
+
+    const website = await this.prisma.generatedWebsite.findFirst({
+      where: {
+        slug: s,
+        status: GeneratedWebsiteStatus.PUBLISHED,
+      },
+      select: {
+        id: true,
+        slug: true,
+        status: true,
+        publishedAt: true,
+        publishedSnapshot: true,
+        html: true,
+        css: true,
+        javascript: true,
+        assetMappings: true,
+        request: {
+          select: {
+            businessName: true,
+            category: true,
+            assetReferences: true,
+          },
+        },
+      },
+    });
+
+    if (!website) {
+      throw new NotFoundException(`Published website with slug "${s}" not found`);
+    }
+
+    // Read from publishedSnapshot to ensure draft edits never bleed into the live public website
+    const snapshot = (website.publishedSnapshot as any) || null;
+    const rawHtml = snapshot?.html !== undefined ? snapshot.html : website.html;
+    const rawCss = snapshot?.css !== undefined ? snapshot.css : website.css;
+    const rawJs = snapshot?.javascript !== undefined ? snapshot.javascript : website.javascript;
+    const mappings = snapshot?.assetMappings !== undefined ? snapshot.assetMappings : (website.assetMappings as any);
+
+    const resolvedHtml = this.resolveHtmlPlaceholders(
+      rawHtml,
+      mappings,
+      website.request?.assetReferences,
+    );
+
+    return {
+      slug: website.slug,
+      businessName: website.request?.businessName || 'Official Website',
+      category: website.request?.category || 'Business',
+      html: resolvedHtml,
+      css: rawCss,
+      javascript: rawJs,
+      publishedAt: website.publishedAt,
+    };
+  }
+
+
 
   /**
    * Finds pending website generation jobs up to the specified limit.
@@ -533,4 +1148,25 @@ export class WebsiteGenerationService {
       });
     }
   }
+
+  /**
+   * Updates and persists the prompt variation index for a website request.
+   */
+  async updatePromptVariation(id: string, variation: number): Promise<number> {
+    const request = await this.prisma.websiteRequest.findUnique({ where: { id } });
+    if (!request) {
+      throw new NotFoundException(`Website request with ID "${id}" not found`);
+    }
+    const assetRefs = (request.assetReferences as any) || {};
+    const updatedAssetRefs = {
+      ...assetRefs,
+      promptVariation: variation,
+    };
+    await this.prisma.websiteRequest.update({
+      where: { id },
+      data: { assetReferences: updatedAssetRefs },
+    });
+    return variation;
+  }
 }
+
