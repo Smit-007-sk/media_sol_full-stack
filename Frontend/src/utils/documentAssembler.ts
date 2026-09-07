@@ -42,7 +42,21 @@ export function assemblePublishedDocument(
   const css = cleanCode(rawCss, 'css');
   const js = cleanCode(rawJs, 'javascript');
 
-  const styleTag = css ? `<style id="__published_style">\n${css}\n</style>` : '';
+  const scrollbarResetStyle = `<style id="__global_scrollbar_reset">
+html, body, * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+</style>`;
+
+  const styleTag = css ? `${scrollbarResetStyle}\n<style id="__published_style">\n${css}\n</style>` : scrollbarResetStyle;
   const scriptTag = js ? `<script id="__published_script">\ntry {\n${js}\n} catch (e) {\n  console.error('Website runtime error:', e);\n}\n</script>` : '';
 
   if (!html && !css && !js) {
@@ -51,6 +65,7 @@ export function assemblePublishedDocument(
 <head>
   <meta charset="utf-8">
   <title>${businessName || 'Official Website'}</title>
+  ${scrollbarResetStyle}
 </head>
 <body>
 </body>

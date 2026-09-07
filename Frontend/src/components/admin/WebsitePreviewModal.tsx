@@ -176,7 +176,21 @@ export function buildPreviewDocument(
 })();
 </script>`;
 
-  const styleTag = css ? `<style id="__preview_injected_style">\n${css}\n</style>` : '';
+  const scrollbarResetStyle = `<style id="__preview_scrollbar_reset">
+html, body, * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+</style>`;
+
+  const styleTag = css ? `${scrollbarResetStyle}\n<style id="__preview_injected_style">\n${css}\n</style>` : scrollbarResetStyle;
   const scriptTag = js ? `<script id="__preview_injected_script">\ntry {\n${js}\n} catch (e) {\n  console.error('Runtime script error:', e);\n  if (window.parent) {\n    window.parent.postMessage({ type: 'PREVIEW_RUNTIME_ERROR', message: e.message || String(e), lineno: 0, colno: 0 }, '*');\n  }\n}\n</script>` : '';
 
   if (!resolvedHtml && !css && !js) {
@@ -185,6 +199,7 @@ export function buildPreviewDocument(
 <head>
   <meta charset="utf-8">
   <title>Empty Website Workspace</title>
+  ${scrollbarResetStyle}
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0f172a; color: #94a3b8; }
     .empty { text-align: center; }

@@ -464,7 +464,7 @@ export class DeepseekPromptService {
             'Floating rounded pill navigation with blur backdrop (glassmorphism) and centered links',
           ],
           grids: [
-            'Horizontal scroll card strip with custom scrollbar and responsive touch-swipe support',
+            'Horizontal card strip with clean touch-swipe support and completely hidden scrollbar (zero visible scrollbar)',
             'Masonry-style visual collage with staggered card elevations and subtle hover scaling',
           ],
           typographies: [
@@ -1115,7 +1115,8 @@ ${fingerprintLines}
 4. DO NOT make uniqueness depend merely on colors, images, or text. Structural uniqueness is mandatory.
 5. ANTI-REPETITION QUALITY GATE: At least 4 major layout decisions MUST visibly differ from a conventional website (e.g. hero layout, navigation treatment, section sequence, card structure, bento grid, or footer design).
 6. Every major section must visually belong to the same assigned design system and visual fingerprint.
-7. The final website must feel like a bespoke, handcrafted digital masterpiece designed specifically for ${businessName}.
+7. ZERO VISIBLE SCROLLBARS MANDATE: Scrollbars MUST NOT be visible anywhere in the UI (no vertical or horizontal scrollbars in any layout, container, card, modal, or template). Smooth scrolling must work 100% invisibly across mouse wheel, touch swipe, and trackpad.
+8. The final website must feel like a bespoke, handcrafted digital masterpiece designed specifically for ${businessName}.
 
 ================================================================================
 9. CONTENT INTEGRITY & ZERO-FABRICATION RULES (CRITICAL)
@@ -1129,7 +1130,8 @@ ${fingerprintLines}
 10. RESPONSIVENESS & ACCESSIBILITY
 ================================================================================
 - Mobile-First & Fluid Responsive: Fully tested across screen widths (320px, 375px, 768px, 1024px, 1440px, 1920px).
-- Zero horizontal scrolling or broken containers.
+- Zero horizontal container overflow or layout breaks.
+- Zero visible scrollbars: Smooth scrolling must be 100% functional without showing any visual scrollbar track or thumb on any device or viewport.
 - WCAG 2.1 AA Compliance: High text contrast ratios, descriptive alt attributes, accessible form labels, keyboard navigable menus.
 
 ================================================================================
@@ -1162,6 +1164,19 @@ You MUST provide your response in EXACTLY three clearly delineated code sections
 </html>
 
 ===== style.css =====
+/* Universal Zero-Scrollbar Reset - Scrollbars must never be visible anywhere */
+html, body, * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Complete, production-ready, beautifully structured CSS implementing the Design Blueprint */
 
 ===== script.js =====
